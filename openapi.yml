@@ -1,0 +1,34 @@
+openapi: 3.0.0
+info:
+  title: LiveTale API
+  version: 0.1.0
+  description: |
+    LiveTale 프로젝트용 API 명세 (Mock).
+    실제 기능은 없고 문서만 제공됩니다.
+paths:
+  /story/continue:
+    post:
+      summary: 스토리 이어쓰기
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                user_input:
+                  type: string
+                story_id:
+                  type: string
+      responses:
+        "200":
+          description: 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reaction_json:
+                    type: object
+                  next_scene:
+                    type: object
