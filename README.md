@@ -31,7 +31,7 @@ python3 -m http.server 8000
 open http://localhost:8000
 ```
 
-## 📝 API 엔드포인트
+## 📝 API 엔드포인트 
 
 ### POST /story/continue
 스토리 이어쓰기 API
