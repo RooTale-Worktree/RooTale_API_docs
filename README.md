@@ -4,7 +4,7 @@ LiveTale 프로젝트용 API 명세서입니다.
 
 ## 📖 API 문서
 
-- **Swagger UI**: [https://818jsy.github.io/LiveToonAPI/](https://818jsy.github.io/LiveToonAPI/)
+- **Swagger UI**: [[https://818jsy.github.io/LiveToonAPI/](https://818jsy.github.io/LiveToonAPI/)](https://rootale-worktree.github.io/RooTale_API_docs/)
 - **OpenAPI Spec**: [openapi.yml](./openapi.yml)
 
 ## 🚀 배포 방법
