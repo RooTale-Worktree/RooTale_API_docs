@@ -1,28 +1,27 @@
 openapi: 3.0.0
 info:
-  title: LiveTale API
+  title: RooTale API
   version: 1.0.0
   description: |
-    LiveTale 프로젝트용 API 명세서
+    RooTale 프로젝트용 API 명세서
     인터랙티브 스토리텔링과 캐릭터 채팅을 위한 종합 API
   contact:
-    name: LiveTale Team
-    email: support@livetale.com
+    name: RooTale Team
+    email: support@rootale.com
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
 
 servers:
-  - url: https://api.livetale.com/v1
+  - url: https://api.rootale.com/v1
     description: Production server
-  - url: https://staging-api.livetale.com/v1
+  - url: https://staging-api.rootale.com/v1
     description: Staging server
   - url: http://localhost:3000/v1
     description: Development server
 
 security:
   - BearerAuth: []
-  - ApiKeyAuth: []
 
 components:
   securitySchemes:
@@ -30,11 +29,7 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-    ApiKeyAuth:
-      type: apiKey
-      in: header
-      name: X-API-Key
-
+      description: JWT 액세스 토큰
   schemas:
     User:
       type: object
@@ -60,6 +55,13 @@ components:
           type: string
           format: uri
           description: 프로필 이미지 URL
+        provider:
+          type: string
+          enum: [KAKAO, NAVER, GOOGLE]
+          description: 소셜 로그인 제공자
+        provider_id:
+          type: string
+          description: 소셜 플랫폼에서의 사용자 ID
         created_at:
           type: string
           format: date-time
@@ -76,7 +78,17 @@ components:
           enum: [free, premium, pro]
           description: 구독 등급
 
-    World:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+
+    Universe:
       type: object
       properties:
         id:
@@ -89,20 +101,21 @@ components:
         description:
           type: string
           description: 세계관 설명
-        theme:
-          type: string
-          enum: [fantasy, scifi, modern, historical, romance, horror]
-          description: 세계관 테마
-        thumbnail_url:
+        representative_image:
           type: string
           format: uri
-          description: 썸네일 이미지 URL
+          description: 세계관 대표 이미지 URL
+        estimated_play_time:
+          type: integer
+          description: 예상 플레이 타임 (분)
         created_at:
           type: string
           format: date-time
+          description: 생성일시
         updated_at:
           type: string
           format: date-time
+          description: 수정일시
 
     Character:
       type: object
@@ -110,116 +123,92 @@ components:
         id:
           type: string
           format: uuid
-        world_id:
+          description: 캐릭터 고유 ID
+        universe_id:
           type: string
           format: uuid
+          description: 소속 세계관 ID
         name:
           type: string
-          minLength: 1
-          maxLength: 50
+          description: 캐릭터 이름
         description:
           type: string
-          maxLength: 500
-        personality:
-          type: string
-          maxLength: 1000
-        appearance:
-          type: string
-          maxLength: 1000
+          description: 캐릭터 설명
         avatar_url:
           type: string
           format: uri
-        created_at:
+          description: 캐릭터 아바타 이미지 URL
+        personality:
           type: string
-          format: date-time
+          description: 캐릭터 성격 설정
 
-    Story:
+    Node:
       type: object
       properties:
         id:
           type: string
           format: uuid
-        world_id:
+          description: 노드 고유 ID
+        universe_id:
           type: string
           format: uuid
-        title:
+          description: 소속 세계관 ID
+        name:
           type: string
+          description: 노드 이름
         description:
           type: string
-        current_scene_id:
+          description: 노드 설명
+        metadata:
+          type: object
+          description: 노드 메타데이터
+
+    ChatSession:
+      type: object
+      properties:
+        id:
           type: string
           format: uuid
-        status:
+          description: 세션 고유 ID
+        user_id:
           type: string
-          enum: [active, paused, completed, abandoned]
+          format: uuid
+          description: 사용자 ID
+        universe_id:
+          type: string
+          format: uuid
+          description: 세계관 ID
+        character_id:
+          type: string
+          format: uuid
+          description: 선택한 캐릭터 ID
+        current_node_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 현재 진행 중인 노드 ID
+        visited_node_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: 방문한 노드 ID 목록
+        vector_db_id:
+          type: string
+          nullable: true
+          description: 벡터 DB ID (장기기억)
+        chat_history_id:
+          type: string
+          nullable: true
+          description: 채팅 히스토리 ID (단기기억)
         created_at:
           type: string
           format: date-time
+          description: 세션 생성일시
         updated_at:
           type: string
           format: date-time
-
-    Scene:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        story_id:
-          type: string
-          format: uuid
-        title:
-          type: string
-        content:
-          type: string
-        image_url:
-          type: string
-          format: uri
-        choices:
-          type: array
-          items:
-            $ref: '#/components/schemas/Choice'
-        is_final:
-          type: boolean
-        created_at:
-          type: string
-          format: date-time
-
-    Choice:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        text:
-          type: string
-        next_scene_id:
-          type: string
-          format: uuid
-        consequence:
-          type: string
-
-    Achievement:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: string
-        description:
-          type: string
-        category:
-          type: string
-        progress:
-          type: integer
-          minimum: 0
-          maximum: 100
-        is_completed:
-          type: boolean
-        unlocked_at:
-          type: string
-          format: date-time
+          description: 세션 수정일시
 
     ChatMessage:
       type: object
@@ -227,130 +216,157 @@ components:
         id:
           type: string
           format: uuid
-        character_id:
+          description: 메시지 고유 ID
+        session_id:
           type: string
           format: uuid
-        user_id:
-          type: string
-          format: uuid
-        content:
-          type: string
+          description: 세션 ID
         role:
           type: string
           enum: [user, assistant]
-        timestamp:
+          description: 메시지 역할
+        content:
+          type: string
+          description: 메시지 내용
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 이미지 URL (assistant 메시지에만 존재)
+        audio_url:
+          type: string
+          format: uri
+          nullable: true
+          description: TTS 오디오 URL (assistant 메시지에만 존재)
+        created_at:
           type: string
           format: date-time
+          description: 메시지 생성일시
 
-    Notification:
+    ChatResponse:
+      type: object
+      properties:
+        message:
+          type: object
+          $ref: '#/components/schemas/ChatMessage'
+          description: 생성된 메시지
+        session:
+          type: object
+          $ref: '#/components/schemas/ChatSession'
+          description: 업데이트된 세션 정보
+        image_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 생성된 이미지 URL (이미지가 생성된 경우)
+        audio_url:
+          type: string
+          format: uri
+          nullable: true
+          description: 생성된 TTS 오디오 URL
+
+    UserUpdate:
+      type: object
+      properties:
+        nickname:
+          type: string
+          maxLength: 30
+          description: 닉네임
+        avatar_url:
+          type: string
+          format: uri
+          description: 프로필 이미지 URL
+
+    Feedback:
       type: object
       properties:
         id:
           type: string
           format: uuid
+          description: 건의사항 고유 ID
         user_id:
           type: string
           format: uuid
+          nullable: true
+          description: 사용자 ID (로그인한 경우)
+        category:
+          type: string
+          enum: [bug, feature, improvement, other]
+          description: 건의사항 카테고리
         title:
           type: string
-        message:
+          description: 제목
+        content:
           type: string
-        type:
-          type: string
-          enum: [info, warning, achievement, story_update]
-        is_read:
-          type: boolean
+          description: 내용
         created_at:
           type: string
           format: date-time
-
-    Error:
-      type: object
-      properties:
-        error:
-          type: string
-        message:
-          type: string
-        details:
-          type: object
+          description: 제출일시
 
 paths:
-  # 1) 회원가입 / 로그인
-  /auth/signup:
-    post:
+  /health:
+    get:
       tags:
-        - Authentication
-      summary: 회원가입
-      description: 새로운 사용자 계정을 생성합니다
+        - System
+      summary: 헬스체크
+      description: |
+        API 서버의 상태를 확인합니다.
+        서버가 정상적으로 동작 중인지 확인할 수 있습니다.
       security: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - email
-                - password
-                - username
-                - nickname
-              properties:
-                email:
-                  type: string
-                  format: email
-                  description: 이메일 주소
-                password:
-                  type: string
-                  minLength: 8
-                  description: 비밀번호 (최소 8자)
-                username:
-                  type: string
-                  minLength: 3
-                  maxLength: 20
-                  description: 사용자명
-                nickname:
-                  type: string
-                  maxLength: 30
-                  description: 닉네임
-                avatar_url:
-                  type: string
-                  format: uri
-                  description: 프로필 이미지 URL (선택사항)
       responses:
-        '201':
-          description: 회원가입 성공
+        '200':
+          description: 서버 정상 동작
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  token:
+                  status:
                     type: string
-                    description: JWT 액세스 토큰
-                  refresh_token:
+                    enum: [healthy, unhealthy]
+                    description: 서버 상태
+                    example: "healthy"
+                  timestamp:
                     type: string
-                    description: JWT 리프레시 토큰
-        '400':
-          description: 잘못된 요청 (이메일 중복, 유효성 검사 실패 등)
+                    format: date-time
+                    description: 응답 시간
+                    example: "2024-01-15T10:30:00Z"
+                  version:
+                    type: string
+                    description: API 버전
+                    example: "1.0.0"
+              example:
+                status: "healthy"
+                timestamp: "2024-01-15T10:30:00Z"
+                version: "1.0.0"
+        '503':
+          description: 서버 비정상 상태
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: 이메일 또는 사용자명 중복
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "unhealthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2024-01-15T10:30:00Z"
+                  error:
+                    type: string
+                    description: 에러 메시지
+                    example: "Database connection failed"
 
-  /auth/login:
+  /user/login:
     post:
       tags:
-        - Authentication
-      summary: 로그인
-      description: 사용자 인증을 수행하고 액세스 토큰을 발급합니다
+        - User
+      summary: 소셜 로그인
+      description: |
+        소셜 플랫폼(카카오, 네이버, 구글)을 통한 로그인을 수행하고 액세스 토큰을 발급합니다.
+        소셜 플랫폼에서 받은 access_token을 전달하면 서버에서 사용자 정보를 조회하고 JWT 토큰을 발급합니다.
       security: []
       requestBody:
         required: true
@@ -359,19 +375,28 @@ paths:
             schema:
               type: object
               required:
+                - provider
                 - email
-                - password
+                - token
               properties:
+                provider:
+                  type: string
+                  enum: [KAKAO, NAVER, GOOGLE]
+                  description: 소셜 로그인 제공자
+                  example: KAKAO
                 email:
                   type: string
                   format: email
-                  description: 이메일 주소
-                password:
+                  description: 사용자 이메일 주소
+                  example: "818jsy72@gmail.com"
+                token:
                   type: string
-                  description: 비밀번호
-                remember_me:
-                  type: boolean
-                  description: 로그인 상태 유지 여부
+                  description: 소셜 플랫폼에서 발급받은 access_token
+                  example: "string"
+                fcm_token:
+                  type: string
+                  description: FCM(Firebase Cloud Messaging) 토큰 (푸시 알림용, 선택사항)
+                  example: "dXJhbmRvbV9mY21fdG9rZW5fc3RyaW5n"
       responses:
         '200':
           description: 로그인 성공
@@ -380,8 +405,6 @@ paths:
               schema:
                 type: object
                 properties:
-                  user:
-                    $ref: '#/components/schemas/User'
                   token:
                     type: string
                     description: JWT 액세스 토큰
@@ -391,8 +414,15 @@ paths:
                   expires_in:
                     type: integer
                     description: 토큰 만료 시간 (초)
+                    example: 3600
+        '400':
+          description: 잘못된 요청 (provider, email 또는 token이 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
-          description: 인증 실패 (잘못된 이메일 또는 비밀번호)
+          description: 인증 실패 (소셜 플랫폼에서 인증 실패 또는 유효하지 않은 토큰)
           content:
             application/json:
               schema:
@@ -404,12 +434,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /auth/logout:
+  /user/logout:
     post:
       tags:
-        - Authentication
+        - User
       summary: 로그아웃
-      description: 사용자 로그아웃을 수행하고 토큰을 무효화합니다
+      description: |
+        현재 로그인한 사용자를 로그아웃 처리합니다.
+        JWT 토큰을 무효화하고 FCM 토큰 연결을 해제합니다.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 로그아웃 성공
@@ -421,6 +455,10 @@ paths:
                   message:
                     type: string
                     example: "로그아웃되었습니다"
+                  fcm_token_removed:
+                    type: boolean
+                    description: FCM 토큰 연결 해제 여부
+                    example: true
         '401':
           description: 인증되지 않은 사용자
           content:
@@ -432,60 +470,203 @@ paths:
     get:
       tags:
         - User
-      summary: 내 정보 조회
-      description: 현재 로그인한 사용자의 정보를 조회합니다
+      summary: 사용자 프로필 조회
+      description: |
+        현재 로그인한 사용자의 프로필 정보를 조회합니다.
+      security:
+        - BearerAuth: []
       responses:
         '200':
-          description: 사용자 정보 조회 성공
+          description: 프로필 조회 성공
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                email: "818jsy72@gmail.com"
+                username: "user123"
+                nickname: "모험가"
+                avatar_url: "https://api.rootale.com/avatars/user123.jpg"
+                provider: "KAKAO"
+                provider_id: "123456789"
+                created_at: "2024-01-01T00:00:00Z"
+                updated_at: "2024-01-15T10:00:00Z"
+                is_active: true
+                subscription_tier: "premium"
         '401':
           description: 인증되지 않은 사용자
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '404':
+          description: 사용자를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  # 2) 세계관(World)
-  /worlds:
+    put:
+      tags:
+        - User
+      summary: 사용자 프로필 수정
+      description: |
+        현재 로그인한 사용자의 프로필 정보를 수정합니다.
+        닉네임과 프로필 이미지 URL을 변경할 수 있습니다.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+            example:
+              nickname: "새로운 닉네임"
+              avatar_url: "https://api.rootale.com/avatars/new-avatar.jpg"
+      responses:
+        '200':
+          description: 프로필 수정 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                email: "818jsy72@gmail.com"
+                username: "user123"
+                nickname: "새로운 닉네임"
+                avatar_url: "https://api.rootale.com/avatars/new-avatar.jpg"
+                provider: "KAKAO"
+                provider_id: "123456789"
+                created_at: "2024-01-01T00:00:00Z"
+                updated_at: "2024-01-15T10:30:00Z"
+                is_active: true
+                subscription_tier: "premium"
+        '400':
+          description: 잘못된 요청 (닉네임 길이 초과 등)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 사용자를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/refresh:
+    post:
+      tags:
+        - User
+      summary: 토큰 갱신
+      description: |
+        리프레시 토큰을 사용하여 새로운 액세스 토큰과 리프레시 토큰을 발급받습니다.
+        액세스 토큰이 만료된 경우 이 API를 호출하여 토큰을 갱신할 수 있습니다.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - refresh_token
+              properties:
+                refresh_token:
+                  type: string
+                  description: 리프레시 토큰
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        '200':
+          description: 토큰 갱신 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+                    description: 새로운 JWT 액세스 토큰
+                  refresh_token:
+                    type: string
+                    description: 새로운 JWT 리프레시 토큰
+                  expires_in:
+                    type: integer
+                    description: 토큰 만료 시간 (초)
+                    example: 3600
+              example:
+                token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                refresh_token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                expires_in: 3600
+        '401':
+          description: 인증 실패 (유효하지 않거나 만료된 리프레시 토큰)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: 잘못된 요청 (refresh_token이 제공되지 않음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /user/withdraw:
+    delete:
+      tags:
+        - User
+      summary: 회원 탈퇴
+      description: |
+        현재 로그인한 사용자의 계정을 탈퇴 처리합니다.
+        탈퇴 시 사용자 데이터는 삭제되거나 익명화 처리됩니다.
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: 회원 탈퇴 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "회원 탈퇴가 완료되었습니다"
+                  deleted_at:
+                    type: string
+                    format: date-time
+                    description: 탈퇴 처리 일시
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 사용자를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /universes:
     get:
       tags:
-        - World
-      summary: 세계관 리스트 보기
-      description: 사용 가능한 모든 세계관 목록을 조회합니다
-      parameters:
-        - name: page
-          in: query
-          description: 페이지 번호 (1부터 시작)
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          description: 페이지당 항목 수
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-        - name: theme
-          in: query
-          description: 세계관 테마 필터
-          required: false
-          schema:
-            type: string
-            enum: [fantasy, scifi, modern, historical, romance, horror]
-        - name: search
-          in: query
-          description: 세계관 이름 검색
-          required: false
-          schema:
-            type: string
+        - Universe
+      summary: 세계관 목록 조회
+      description: |
+        사용 가능한 모든 세계관 목록을 조회합니다.
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: 세계관 목록 조회 성공
@@ -494,59 +675,72 @@ paths:
               schema:
                 type: object
                 properties:
-                  worlds:
+                  universes:
                     type: array
                     items:
-                      $ref: '#/components/schemas/World'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      total_pages:
-                        type: integer
-        '400':
-          description: 잘못된 요청
+                      $ref: '#/components/schemas/Universe'
+        '401':
+          description: 인증되지 않은 사용자
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /worlds/{world_id}/characters:
+  /universes/{universe_id}:
     get:
       tags:
-        - World
-      summary: 해당 세계관 주인공 리스트 보기
-      description: 특정 세계관의 캐릭터 목록을 조회합니다
+        - Universe
+      summary: 세계관 상세 정보 조회
+      description: |
+        특정 세계관의 상세 정보를 조회합니다.
+        세계관 대표 이미지, 설명, 예상 플레이 타임 등의 메타데이터를 포함합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - name: world_id
+        - name: universe_id
           in: path
           required: true
-          description: 세계관 ID
           schema:
             type: string
             format: uuid
-        - name: page
-          in: query
-          description: 페이지 번호
-          required: false
+          description: 세계관 고유 ID
+      responses:
+        '200':
+          description: 세계관 정보 조회 성공
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Universe'
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 세계관을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /universes/{universe_id}/characters:
+    get:
+      tags:
+        - Universe
+      summary: 세계관 캐릭터 목록 조회
+      description: |
+        특정 세계관에 속한 캐릭터 목록을 조회합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: universe_id
+          in: path
+          required: true
           schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          description: 페이지당 항목 수
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
+            type: string
+            format: uuid
+          description: 세계관 고유 ID
       responses:
         '200':
           description: 캐릭터 목록 조회 성공
@@ -559,17 +753,12 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/Character'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      total_pages:
-                        type: integer
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
           description: 세계관을 찾을 수 없음
           content:
@@ -577,19 +766,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /session:
     post:
       tags:
-        - World
-      summary: 해당 세계관 테마로 주인공 만들기
-      description: 특정 세계관의 테마에 맞는 새로운 캐릭터를 생성합니다
-      parameters:
-        - name: world_id
-          in: path
-          required: true
-          description: 세계관 ID
-          schema:
-            type: string
-            format: uuid
+        - Session
+      summary: 세계관 초기화 및 세션 생성
+      description: |
+        세계관을 선택하고 초기화합니다.
+        서버에서 세계관 노드 전체를 캐싱하고, 메타데이터를 로드하며,
+        유저별 세계관 설정을 로드합니다.
+        첫 채팅인 경우 세계관 초기 메시지와 이미지를 생성합니다.
+        세션을 생성하고 첫 대사와 첫 사진을 반환합니다.
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -597,101 +786,44 @@ paths:
             schema:
               type: object
               required:
-                - name
-                - personality
-                - appearance
+                - universe_id
+                - character_id
               properties:
-                name:
+                universe_id:
                   type: string
-                  minLength: 1
-                  maxLength: 50
-                  description: 캐릭터 이름
-                description:
-                  type: string
-                  maxLength: 500
-                  description: 캐릭터 설명
-                personality:
-                  type: string
-                  maxLength: 1000
-                  description: 캐릭터 성격
-                appearance:
-                  type: string
-                  maxLength: 1000
-                  description: 캐릭터 외모
-                avatar_url:
-                  type: string
-                  format: uri
-                  description: 캐릭터 아바타 이미지 URL
-      responses:
-        '201':
-          description: 캐릭터 생성 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Character'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 세계관을 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '409':
-          description: 캐릭터 이름 중복
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 3) 스토리(Story)
-  /worlds/{world_id}/start:
-    post:
-      tags:
-        - Story
-      summary: 세계관 시작 스토리 제공
-      description: 특정 세계관에서 새로운 스토리를 시작합니다
-      parameters:
-        - name: world_id
-          in: path
-          required: true
-          description: 세계관 ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
+                  format: uuid
+                  description: 세계관 고유 ID
+                  example: "550e8400-e29b-41d4-a716-446655440000"
                 character_id:
                   type: string
                   format: uuid
-                  description: 사용할 캐릭터 ID
-                story_title:
-                  type: string
-                  maxLength: 100
-                  description: 스토리 제목 (선택사항)
+                  description: 선택한 캐릭터 ID
+                  example: "550e8400-e29b-41d4-a716-446655440000"
       responses:
         '201':
-          description: 스토리 시작 성공
+          description: 세계관 초기화 및 세션 생성 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  story:
-                    $ref: '#/components/schemas/Story'
-                  first_scene:
-                    $ref: '#/components/schemas/Scene'
+                  first_message:
+                    type: string
+                    description: 첫 대사 (초기 메시지 내용)
+                    example: "안녕하세요! 저는 당신의 안내자가 될 캐릭터입니다."
+                  first_image:
+                    type: string
+                    format: uri
+                    description: 첫 사진 (초기 메시지 이미지 URL)
+                    example: "https://api.rootale.com/images/initial-scene.jpg"
         '400':
-          description: 잘못된 요청
+          description: 잘못된 요청 (universe_id 또는 character_id가 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 인증되지 않은 사용자
           content:
             application/json:
               schema:
@@ -703,258 +835,85 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /stories/{story_id}/progress:
-    post:
-      tags:
-        - Story
-      summary: 유저 스토리 선택지 입력 → 다음 스토리/이미지 응답
-      description: 사용자의 선택에 따라 다음 장면으로 진행합니다
-      parameters:
-        - name: story_id
-          in: path
-          required: true
-          description: 스토리 ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - choice_id
-              properties:
-                choice_id:
-                  type: string
-                  format: uuid
-                  description: 선택한 선택지의 ID
-                custom_input:
-                  type: string
-                  maxLength: 500
-                  description: 사용자 정의 입력 (선택사항)
-      responses:
-        '200':
-          description: 다음 장면으로 진행 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  next_scene:
-                    $ref: '#/components/schemas/Scene'
-                  story_status:
-                    type: string
-                    enum: [active, paused, completed, abandoned]
-                  achievements:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Achievement'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 스토리 또는 선택지를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /stories/{story_id}:
     get:
       tags:
-        - Story
-      summary: 스토리 전체 조회
-      description: 특정 스토리의 전체 정보와 현재 진행 상황을 조회합니다
+        - Session
+      summary: 전체 내러티브 세션 조회
+      description: |
+        현재 사용자의 모든 내러티브 세션 목록을 조회합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - name: story_id
-          in: path
-          required: true
-          description: 스토리 ID
-          schema:
-            type: string
-            format: uuid
-        - name: include_scenes
+        - name: limit
           in: query
-          description: 장면 정보 포함 여부
-          required: false
           schema:
-            type: boolean
-            default: false
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: 조회할 세션 개수
+        - name: offset
+          in: query
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: 조회 시작 위치
       responses:
         '200':
-          description: 스토리 정보 조회 성공
+          description: 세션 목록 조회 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  story:
-                    $ref: '#/components/schemas/Story'
-                  current_scene:
-                    $ref: '#/components/schemas/Scene'
-                  scenes:
+                  sessions:
                     type: array
                     items:
-                      $ref: '#/components/schemas/Scene'
-                    description: 장면 목록 (include_scenes=true일 때만)
-        '404':
-          description: 스토리를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /stories/{story_id}/scenes/{scene_id}:
-    get:
-      tags:
-        - Story
-      summary: 특정 장면 조회
-      description: 스토리의 특정 장면 정보를 조회합니다
-      parameters:
-        - name: story_id
-          in: path
-          required: true
-          description: 스토리 ID
-          schema:
-            type: string
-            format: uuid
-        - name: scene_id
-          in: path
-          required: true
-          description: 장면 ID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: 장면 정보 조회 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Scene'
-        '404':
-          description: 스토리 또는 장면을 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 4) 이미지 + 스토리
-  /stories/{story_id}/scene:
-    post:
-      tags:
-        - Story
-      summary: (텍스트 + 이미지) 함께 반환
-      description: 사용자 입력을 바탕으로 새로운 장면을 생성하고 텍스트와 이미지를 함께 반환합니다
-      parameters:
-        - name: story_id
-          in: path
-          required: true
-          description: 스토리 ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - user_input
-              properties:
-                user_input:
-                  type: string
-                  minLength: 1
-                  maxLength: 1000
-                  description: 사용자 입력 텍스트
-                scene_context:
-                  type: string
-                  maxLength: 2000
-                  description: 장면 컨텍스트 (선택사항)
-                image_style:
-                  type: string
-                  enum: [realistic, anime, cartoon, watercolor, oil_painting]
-                  description: 이미지 스타일 (선택사항)
-      responses:
-        '200':
-          description: 장면 생성 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  scene:
-                    $ref: '#/components/schemas/Scene'
-                  prose:
-                    type: string
-                    description: 생성된 장면 텍스트
-                  image_url:
-                    type: string
-                    format: uri
-                    description: 생성된 이미지 URL
-                  choices:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Choice'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 스토리를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 5) 유저 도전과제 / 진행도
-  /user/achievements:
-    get:
-      tags:
-        - Achievement
-      summary: 도전과제 리스트 & 진행도 조회
-      description: 사용자의 도전과제 목록과 진행 상황을 조회합니다
-      parameters:
-        - name: category
-          in: query
-          description: 도전과제 카테고리 필터
-          required: false
-          schema:
-            type: string
-            enum: [story, character, social, exploration, creative]
-        - name: status
-          in: query
-          description: 도전과제 상태 필터
-          required: false
-          schema:
-            type: string
-            enum: [in_progress, completed, locked]
-      responses:
-        '200':
-          description: 도전과제 목록 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  achievements:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Achievement'
-                  total_completed:
+                      type: object
+                      properties:
+                        session_id:
+                          type: string
+                          format: uuid
+                          description: 세션 ID
+                        session_name:
+                          type: string
+                          description: 세션 이름
+                        universe_id:
+                          type: string
+                          format: uuid
+                          description: 유니버스 ID
+                        representative_image:
+                          type: string
+                          format: uri
+                          description: 대표 이미지 URL
+                        created_at:
+                          type: string
+                          format: date-time
+                          description: 세션 생성일시
+                        updated_at:
+                          type: string
+                          format: date-time
+                          description: 세션 수정일시
+                  total:
                     type: integer
-                    description: 완료된 도전과제 수
-                  total_available:
-                    type: integer
-                    description: 전체 도전과제 수
+                    description: 전체 세션 개수
+                    example: 10
+              example:
+                sessions:
+                  - session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    session_name: "모험의 시작"
+                    universe_id: "550e8400-e29b-41d4-a716-446655440010"
+                    representative_image: "https://api.rootale.com/images/session-1.jpg"
+                    created_at: "2024-01-15T10:00:00Z"
+                    updated_at: "2024-01-15T10:30:00Z"
+                  - session_id: "550e8400-e29b-41d4-a716-446655440001"
+                    session_name: "마법의 숲"
+                    universe_id: "550e8400-e29b-41d4-a716-446655440011"
+                    representative_image: "https://api.rootale.com/images/session-2.jpg"
+                    created_at: "2024-01-14T15:20:00Z"
+                    updated_at: "2024-01-14T16:45:00Z"
+                total: 10
         '401':
           description: 인증되지 않은 사용자
           content:
@@ -962,163 +921,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /user/achievements/{id}:
-    patch:
+  /session/{session_id}:
+    delete:
       tags:
-        - Achievement
-      summary: 도전과제 업데이트
-      description: 특정 도전과제의 진행 상황을 업데이트합니다
+        - Session
+      summary: 세션 삭제
+      description: |
+        특정 내러티브 세션을 삭제합니다.
+        세션과 관련된 모든 데이터(메시지, 히스토리 등)가 함께 삭제됩니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - name: id
+        - name: session_id
           in: path
           required: true
-          description: 도전과제 ID
           schema:
             type: string
             format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                progress:
-                  type: integer
-                  minimum: 0
-                  maximum: 100
-                  description: 진행도 (0-100)
-                is_completed:
-                  type: boolean
-                  description: 완료 여부
+          description: 세션 고유 ID
       responses:
         '200':
-          description: 도전과제 업데이트 성공
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Achievement'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 도전과제를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 6) 유저 설정 관리
-  /user/settings:
-    get:
-      tags:
-        - User
-      summary: 유저 설정 조회
-      description: 사용자의 개인 설정을 조회합니다
-      responses:
-        '200':
-          description: 설정 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  theme:
-                    type: string
-                    enum: [light, dark, auto]
-                    description: 테마 설정
-                  language:
-                    type: string
-                    enum: [ko, en, ja, zh]
-                    description: 언어 설정
-                  notifications:
-                    type: object
-                    properties:
-                      email:
-                        type: boolean
-                        description: 이메일 알림 설정
-                      push:
-                        type: boolean
-                        description: 푸시 알림 설정
-                      story_updates:
-                        type: boolean
-                        description: 스토리 업데이트 알림
-                  privacy:
-                    type: object
-                    properties:
-                      profile_visibility:
-                        type: string
-                        enum: [public, friends, private]
-                        description: 프로필 공개 설정
-                      story_sharing:
-                        type: boolean
-                        description: 스토리 공유 허용
-                  story_preferences:
-                    type: object
-                    properties:
-                      auto_save:
-                        type: boolean
-                        description: 자동 저장 설정
-                      image_quality:
-                        type: string
-                        enum: [low, medium, high]
-                        description: 이미지 품질 설정
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-    patch:
-      tags:
-        - User
-      summary: 유저 설정 변경
-      description: 사용자의 개인 설정을 변경합니다
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                theme:
-                  type: string
-                  enum: [light, dark, auto]
-                language:
-                  type: string
-                  enum: [ko, en, ja, zh]
-                notifications:
-                  type: object
-                  properties:
-                    email:
-                      type: boolean
-                    push:
-                      type: boolean
-                    story_updates:
-                      type: boolean
-                privacy:
-                  type: object
-                  properties:
-                    profile_visibility:
-                      type: string
-                      enum: [public, friends, private]
-                    story_sharing:
-                      type: boolean
-                story_preferences:
-                  type: object
-                  properties:
-                    auto_save:
-                      type: boolean
-                    image_quality:
-                      type: string
-                      enum: [low, medium, high]
-      responses:
-        '200':
-          description: 설정 업데이트 성공
+          description: 세션 삭제 성공
           content:
             application/json:
               schema:
@@ -1126,12 +949,195 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: "설정이 성공적으로 업데이트되었습니다"
-                  settings:
-                    type: object
-                    description: 업데이트된 설정 정보
+                    example: "세션이 삭제되었습니다"
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 다른 사용자의 세션에 접근할 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 세션을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /narrative/callback/text/{callback_id}:
+    get:
+      tags:
+        - Narrative
+      summary: 텍스트 생성 상태 확인
+      description: |
+        텍스트 생성 상태를 확인하고, 준비된 경우 텍스트를 반환합니다.
+        텍스트가 아직 생성 중인 경우 상태를 반환하고, 생성이 완료되면 텍스트를 반환합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: callback_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 콜백 ID (text_callback_url에서 추출)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: 텍스트 생성 상태 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [pending, completed, failed]
+                    description: 텍스트 생성 상태 (pending - 생성 중, completed - 완료, failed - 실패)
+                    example: "completed"
+                  text:
+                    type: string
+                    nullable: true
+                    description: 생성된 텍스트 (status가 completed인 경우에만 포함)
+                    example: "안녕하세요! 오늘 날씨가 정말 좋네요."
+                  error:
+                    type: string
+                    nullable: true
+                    description: 에러 메시지 (status가 failed인 경우에만 포함)
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 콜백 ID를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /narrative/callback/image/{callback_id}:
+    get:
+      tags:
+        - Narrative
+      summary: 이미지 생성 상태 확인
+      description: |
+        이미지 생성 상태를 확인하고, 준비된 경우 이미지 URL을 반환합니다.
+        이미지가 아직 생성 중인 경우 상태를 반환하고, 생성이 완료되면 이미지 URL을 반환합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: callback_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 콜백 ID (image_callback_url에서 추출)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      responses:
+        '200':
+          description: 이미지 생성 상태 확인 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [pending, completed, failed]
+                    description: 이미지 생성 상태 (pending - 생성 중, completed - 완료, failed - 실패)
+                    example: "completed"
+                  image_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: 생성된 이미지 URL (status가 completed인 경우에만 포함)
+                    example: "https://api.rootale.com/images/generated-12345.jpg"
+                  error:
+                    type: string
+                    nullable: true
+                    description: 에러 메시지 (status가 failed인 경우에만 포함)
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 콜백 ID를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /narrative/{session_id}/tts:
+    post:
+      tags:
+        - Narrative
+      summary: TTS 오디오 생성
+      description: |
+        특정 세션의 최신 메시지 또는 지정된 텍스트를 TTS로 변환하여 오디오를 생성합니다.
+        서버에서 TTS CPU 처리를 수행하여 오디오 파일을 생성하고 URL을 반환합니다.
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: session_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: 세션 고유 ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message_id:
+                  type: string
+                  format: uuid
+                  description: TTS로 변환할 메시지 ID (지정하지 않으면 최신 메시지 사용)
+                  example: "550e8400-e29b-41d4-a716-446655440000"
+                text:
+                  type: string
+                  description: TTS로 변환할 텍스트 (message_id가 없을 경우 사용)
+                  example: "안녕하세요! 오늘 날씨가 정말 좋네요."
+                voice_type:
+                  type: string
+                  description: 성우 종류 (지정하지 않으면 기본 성우 사용)
+                  enum: [male, female, neutral]
+                  example: "female"
+      responses:
+        '200':
+          description: TTS 오디오 생성 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  audio_url:
+                    type: string
+                    format: uri
+                    description: 생성된 TTS 오디오 URL
+                    example: "https://api.rootale.com/audio/tts-12345.mp3"
+                  message_id:
+                    type: string
+                    format: uuid
+                    nullable: true
+                    description: TTS로 변환된 메시지 ID (message_id를 지정한 경우)
         '400':
-          description: 잘못된 요청
+          description: 잘못된 요청 (message_id 또는 text가 유효하지 않음)
           content:
             application/json:
               schema:
@@ -1142,22 +1148,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+        '403':
+          description: 다른 사용자의 세션에 접근할 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 세션 또는 메시지를 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 서버 내부 오류 (TTS 처리 실패 등)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
-  # 7) 캐릭터 채팅
-  /chat/{character_id}/user:
+  /narrative/{session_id}/messages:
     post:
       tags:
-        - Chat
-      summary: 캐릭터 채팅 - 유저 인풋
-      description: 특정 캐릭터와의 채팅에서 사용자 메시지를 전송합니다
+        - Narrative
+      summary: 메시지 전송 및 응답 생성
+      description: |
+        유저 메시지를 전송하고 AI 응답을 생성합니다.
+        
+        **서버 처리 과정:**
+        1. 유저 메시지와 세션 컨텍스트(선택한 캐릭터, 진행 중인 노드, 방문한 노드)를 수집
+        2. 벡터 임베딩 주입: User Universe Attribute와 벡터 DB에서 관련 장기기억을 검색하여 컨텍스트 구성
+        3. Gemini API 호출: 구성된 컨텍스트와 유저 메시지를 Gemini에 전달하여 응답 생성
+        4. Gemini 출력을 분석하여 필요시 이미지 API 호출 (서버에서 자동 처리, 비동기)
+        5. 해당 턴의 User/Assistant 대화를 벡터 임베딩하여 벡터 DB에 저장 (장기기억 업데이트)
+        6. 채팅 히스토리 업데이트 (단기기억 업데이트)
+        7. 생성된 텍스트와 이미지 콜백 URL을 클라이언트에 반환
+        
+        **비동기 처리 (폴링 방식):**
+        - 텍스트와 이미지는 각각 독립적으로 생성되며, 어느 것이 먼저 도착할지 보장되지 않습니다.
+        - 텍스트가 먼저 준비되면 즉시 응답에 포함됩니다.
+        - 텍스트가 생성 중인 경우, `text_callback_url`이 응답에 포함됩니다. 클라이언트는 이 URL을 주기적으로 폴링하여 텍스트 생성 상태를 확인합니다.
+        - 이미지가 생성 중인 경우, `image_callback_url`이 응답에 포함됩니다. 클라이언트는 이 URL을 주기적으로 폴링하여 이미지 생성 상태를 확인합니다.
+        - 폴링은 GET 요청으로 수행하며, 상태가 `pending`인 경우 계속 폴링하고, `completed` 또는 `failed`인 경우 폴링을 중지합니다.
+        
+        **참고:** 벡터 임베딩은 현재는 Gemini 입력/출력을 유저별 로그로 저장하는 수준으로 구현되며,
+        향후 Chat 담당자가 벡터 임베딩 기능을 구현할 예정입니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - name: character_id
+        - name: session_id
           in: path
           required: true
-          description: 캐릭터 ID
           schema:
             type: string
             format: uuid
+          description: 세션 고유 ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
       requestBody:
         required: true
         content:
@@ -1169,152 +1215,106 @@ paths:
               properties:
                 message:
                   type: string
-                  minLength: 1
-                  maxLength: 1000
-                  description: 사용자 메시지
-                context:
-                  type: string
-                  maxLength: 2000
-                  description: 추가 컨텍스트 (선택사항)
-      responses:
-        '201':
-          description: 사용자 메시지 전송 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    $ref: '#/components/schemas/ChatMessage'
-                  conversation_id:
-                    type: string
-                    format: uuid
-                    description: 대화 세션 ID
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 캐릭터를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /chat/{character_id}/ai:
-    post:
-      tags:
-        - Chat
-      summary: 캐릭터 채팅 - AI 응답
-      description: 캐릭터의 AI 응답을 생성하고 반환합니다
-      parameters:
-        - name: character_id
-          in: path
-          required: true
-          description: 캐릭터 ID
-          schema:
-            type: string
-            format: uuid
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                conversation_id:
-                  type: string
-                  format: uuid
-                  description: 대화 세션 ID
-                last_message_id:
-                  type: string
-                  format: uuid
-                  description: 마지막 메시지 ID
-                max_length:
-                  type: integer
-                  minimum: 50
-                  maximum: 2000
-                  default: 500
-                  description: 최대 응답 길이
+                  description: 유저 메시지 내용
+                  example: "안녕하세요! 오늘 날씨가 정말 좋네요."
       responses:
         '200':
-          description: AI 응답 생성 성공
+          description: 메시지 전송 및 응답 생성 성공
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  reply:
-                    $ref: '#/components/schemas/ChatMessage'
-                  character_emotion:
+                  text:
                     type: string
-                    enum: [happy, sad, angry, surprised, neutral, excited]
-                    description: 캐릭터 감정 상태
-                  response_time:
-                    type: number
-                    description: 응답 생성 시간 (초)
+                    nullable: true
+                    description: 생성된 텍스트 응답 (텍스트가 준비된 경우에만 포함)
+                    example: "안녕하세요! 오늘 날씨가 정말 좋네요."
+                  text_callback_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: 텍스트 생성 상태 확인용 URL (텍스트가 생성 중인 경우에만 포함, 폴링 방식으로 상태 확인)
+                    example: "https://api.rootale.com/v1/narrative/callback/text/550e8400-e29b-41d4-a716-446655440000"
+                  image_callback_url:
+                    type: string
+                    format: uri
+                    nullable: true
+                    description: 이미지 생성 상태 확인용 URL (이미지가 생성 중인 경우에만 포함, 폴링 방식으로 상태 확인)
+                    example: "https://api.rootale.com/v1/narrative/callback/image/550e8400-e29b-41d4-a716-446655440000"
         '400':
-          description: 잘못된 요청
+          description: 잘못된 요청 (message가 유효하지 않음)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 다른 사용자의 세션에 접근할 수 없음
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '404':
-          description: 캐릭터 또는 대화를 찾을 수 없음
+          description: 세션을 찾을 수 없음
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
         '429':
-          description: 요청 한도 초과
+          description: 너무 많은 요청 (Rate limit 초과)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 서버 내부 오류 (Gemini API 또는 이미지 API 호출 실패 등)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /chat/{character_id}/history:
+  /narrative/{session_id}/history:
     get:
       tags:
-        - Chat
-      summary: 캐릭터 채팅 기록 조회
-      description: 특정 캐릭터와의 채팅 기록을 조회합니다
+        - Narrative
+      summary: 세션 메시지 히스토리 조회
+      description: |
+        특정 세션의 내러티브 메시지 히스토리를 조회합니다.
+        단기기억에 저장된 대화 내역을 반환합니다.
+      security:
+        - BearerAuth: []
       parameters:
-        - name: character_id
+        - name: session_id
           in: path
           required: true
-          description: 캐릭터 ID
           schema:
             type: string
             format: uuid
-        - name: page
-          in: query
-          description: 페이지 번호
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
+          description: 세션 고유 ID
         - name: limit
           in: query
-          description: 페이지당 메시지 수
-          required: false
           schema:
             type: integer
             minimum: 1
             maximum: 100
             default: 50
-        - name: since
+          description: 조회할 메시지 개수
+        - name: offset
           in: query
-          description: 조회 시작 날짜 (ISO 8601)
-          required: false
           schema:
-            type: string
-            format: date-time
+            type: integer
+            minimum: 0
+            default: 0
+          description: 조회 시작 위치
       responses:
         '200':
-          description: 채팅 기록 조회 성공
+          description: 메시지 히스토리 조회 성공
           content:
             application/json:
               schema:
@@ -1324,440 +1324,112 @@ paths:
                     type: array
                     items:
                       $ref: '#/components/schemas/ChatMessage'
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      total_pages:
-                        type: integer
+                  total:
+                    type: integer
+                    description: 전체 메시지 개수
+                    example: 25
+              example:
+                messages:
+                  - id: "550e8400-e29b-41d4-a716-446655440001"
+                    session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    role: "user"
+                    content: "안녕하세요! 오늘 날씨가 정말 좋네요."
+                    image_url: null
+                    audio_url: null
+                    created_at: "2024-01-15T10:30:00Z"
+                  - id: "550e8400-e29b-41d4-a716-446655440002"
+                    session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    role: "assistant"
+                    content: "안녕하세요! 맞아요, 오늘 날씨가 정말 화창하네요. 산책하기 좋은 날씨예요."
+                    image_url: "https://api.rootale.com/images/generated-12345.jpg"
+                    audio_url: "https://api.rootale.com/audio/tts-12345.mp3"
+                    created_at: "2024-01-15T10:30:05Z"
+                  - id: "550e8400-e29b-41d4-a716-446655440003"
+                    session_id: "550e8400-e29b-41d4-a716-446655440000"
+                    role: "user"
+                    content: "그럼 같이 산책하러 가볼까요?"
+                    image_url: null
+                    audio_url: null
+                    created_at: "2024-01-15T10:31:00Z"
+                total: 25
+        '401':
+          description: 인증되지 않은 사용자
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: 다른 사용자의 세션에 접근할 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '404':
-          description: 캐릭터를 찾을 수 없음
+          description: 세션을 찾을 수 없음
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
 
-  /chat/{character_id}/settings:
-    patch:
+  /feedback:
+    post:
       tags:
-        - Chat
-      summary: 캐릭터 채팅 설정 변경
-      description: 특정 캐릭터와의 채팅 설정을 변경합니다
-      parameters:
-        - name: character_id
-          in: path
-          required: true
-          description: 캐릭터 ID
-          schema:
-            type: string
-            format: uuid
+        - System
+      summary: 건의사항 제출
+      description: |
+        버그 리포트, 기능 제안, 개선 사항 등의 건의사항을 제출합니다.
+        로그인한 사용자는 자동으로 사용자 ID가 연결되며, 비로그인 사용자도 제출할 수 있습니다.
+      security: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required:
+                - category
+                - title
+                - content
               properties:
-                tone:
+                category:
                   type: string
-                  enum: [formal, casual, friendly, professional, playful]
-                  description: 대화 톤
-                style:
+                  enum: [bug, feature, improvement, other]
+                  description: 건의사항 카테고리
+                  example: "bug"
+                title:
                   type: string
-                  enum: [conversational, narrative, poetic, technical]
-                  description: 대화 스타일
-                personality_emphasis:
-                  type: array
-                  items:
-                    type: string
-                  description: 강조할 성격 특성
-                response_length:
+                  minLength: 1
+                  maxLength: 200
+                  description: 제목
+                  example: "로그인 시 오류 발생"
+                content:
                   type: string
-                  enum: [short, medium, long]
-                  description: 응답 길이 선호도
-                topics:
-                  type: array
-                  items:
-                    type: string
-                  description: 선호하는 대화 주제
+                  minLength: 1
+                  maxLength: 5000
+                  description: 내용
+                  example: "카카오 로그인 시 간헐적으로 500 에러가 발생합니다."
       responses:
-        '200':
-          description: 채팅 설정 업데이트 성공
+        '201':
+          description: 건의사항 제출 성공
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "채팅 설정이 성공적으로 업데이트되었습니다"
-                  settings:
-                    type: object
-                    description: 업데이트된 설정 정보
+                $ref: '#/components/schemas/Feedback'
+              example:
+                id: "550e8400-e29b-41d4-a716-446655440000"
+                user_id: "550e8400-e29b-41d4-a716-446655440001"
+                category: "bug"
+                title: "로그인 시 오류 발생"
+                content: "카카오 로그인 시 간헐적으로 500 에러가 발생합니다."
+                created_at: "2024-01-15T10:30:00Z"
         '400':
-          description: 잘못된 요청
+          description: 잘못된 요청 (필수 필드 누락 또는 유효하지 않은 값)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
-        '404':
-          description: 캐릭터를 찾을 수 없음
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 8) 마이페이지
-  /mypage/profile:
-    get:
-      tags:
-        - MyPage
-      summary: 프로필/계정 정보
-      description: 사용자의 상세 프로필과 계정 정보를 조회합니다
-      responses:
-        '200':
-          description: 프로필 정보 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  user:
-                    $ref: '#/components/schemas/User'
-                  stats:
-                    type: object
-                    properties:
-                      stories_completed:
-                        type: integer
-                        description: 완료한 스토리 수
-                      characters_created:
-                        type: integer
-                        description: 생성한 캐릭터 수
-                      total_chat_messages:
-                        type: integer
-                        description: 총 채팅 메시지 수
-                      days_active:
-                        type: integer
-                        description: 활성 사용 일수
-                  achievements_summary:
-                    type: object
-                    properties:
-                      total_achievements:
-                        type: integer
-                      completed_achievements:
-                        type: integer
-                      recent_achievements:
-                        type: array
-                        items:
-                          $ref: '#/components/schemas/Achievement'
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /mypage/stories:
-    get:
-      tags:
-        - MyPage
-      summary: 내가 진행/완결한 스토리 리스트
-      description: 사용자가 진행 중이거나 완료한 스토리 목록을 조회합니다
-      parameters:
-        - name: status
-          in: query
-          description: 스토리 상태 필터
-          required: false
-          schema:
-            type: string
-            enum: [active, paused, completed, abandoned]
-        - name: page
-          in: query
-          description: 페이지 번호
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          description: 페이지당 항목 수
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 50
-            default: 20
-      responses:
-        '200':
-          description: 스토리 목록 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  stories:
-                    type: array
-                    items:
-                      allOf:
-                        - $ref: '#/components/schemas/Story'
-                        - type: object
-                          properties:
-                            progress_percentage:
-                              type: integer
-                              minimum: 0
-                              maximum: 100
-                            last_played:
-                              type: string
-                              format: date-time
-                            world_name:
-                              type: string
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      total_pages:
-                        type: integer
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /mypage/usage:
-    get:
-      tags:
-        - MyPage
-      summary: 사용량 / 요금제 상태
-      description: 사용자의 현재 사용량과 요금제 정보를 조회합니다
-      responses:
-        '200':
-          description: 사용량 정보 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  subscription:
-                    type: object
-                    properties:
-                      tier:
-                        type: string
-                        enum: [free, premium, pro]
-                      status:
-                        type: string
-                        enum: [active, expired, cancelled]
-                      expires_at:
-                        type: string
-                        format: date-time
-                  usage:
-                    type: object
-                    properties:
-                      stories_created:
-                        type: integer
-                        description: 생성한 스토리 수
-                      characters_created:
-                        type: integer
-                        description: 생성한 캐릭터 수
-                      chat_messages_sent:
-                        type: integer
-                        description: 전송한 채팅 메시지 수
-                      images_generated:
-                        type: integer
-                        description: 생성한 이미지 수
-                  limits:
-                    type: object
-                    properties:
-                      max_stories:
-                        type: integer
-                        description: 최대 스토리 수
-                      max_characters:
-                        type: integer
-                        description: 최대 캐릭터 수
-                      monthly_chat_messages:
-                        type: integer
-                        description: 월간 채팅 메시지 한도
-                      monthly_images:
-                        type: integer
-                        description: 월간 이미지 생성 한도
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /mypage/relationships:
-    get:
-      tags:
-        - MyPage
-      summary: 관계 요약
-      description: 사용자와 캐릭터들 간의 관계 요약을 조회합니다
-      responses:
-        '200':
-          description: 관계 요약 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  character_relationships:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        character:
-                          $ref: '#/components/schemas/Character'
-                        relationship_level:
-                          type: integer
-                          minimum: 0
-                          maximum: 100
-                          description: 관계 수준 (0-100)
-                        interaction_count:
-                          type: integer
-                          description: 상호작용 횟수
-                        last_interaction:
-                          type: string
-                          format: date-time
-                        favorite_topics:
-                          type: array
-                          items:
-                            type: string
-                  total_characters:
-                    type: integer
-                    description: 총 상호작용한 캐릭터 수
-                  most_interacted:
-                    type: object
-                    properties:
-                      character:
-                        $ref: '#/components/schemas/Character'
-                      interaction_count:
-                        type: integer
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  # 9) 알림 / 공지
-  /notifications:
-    get:
-      tags:
-        - Notification
-      summary: 알림/공지 조회
-      description: 사용자의 알림과 공지사항 목록을 조회합니다
-      parameters:
-        - name: type
-          in: query
-          description: 알림 타입 필터
-          required: false
-          schema:
-            type: string
-            enum: [info, warning, achievement, story_update]
-        - name: unread_only
-          in: query
-          description: 읽지 않은 알림만 조회
-          required: false
-          schema:
-            type: boolean
-            default: false
-        - name: page
-          in: query
-          description: 페이지 번호
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            default: 1
-        - name: limit
-          in: query
-          description: 페이지당 항목 수
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-            default: 20
-      responses:
-        '200':
-          description: 알림 목록 조회 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  notifications:
-                    type: array
-                    items:
-                      $ref: '#/components/schemas/Notification'
-                  unread_count:
-                    type: integer
-                    description: 읽지 않은 알림 수
-                  pagination:
-                    type: object
-                    properties:
-                      page:
-                        type: integer
-                      limit:
-                        type: integer
-                      total:
-                        type: integer
-                      total_pages:
-                        type: integer
-        '401':
-          description: 인증되지 않은 사용자
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-
-  /notifications/{id}/read:
-    patch:
-      tags:
-        - Notification
-      summary: 알림 읽음 처리
-      description: 특정 알림을 읽음 처리합니다
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: 알림 ID
-          schema:
-            type: string
-            format: uuid
-      responses:
-        '200':
-          description: 알림 읽음 처리 성공
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                    example: "알림이 읽음 처리되었습니다"
-                  notification:
-                    $ref: '#/components/schemas/Notification'
-        '400':
-          description: 잘못된 요청
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-        '404':
-          description: 알림을 찾을 수 없음
+        '429':
+          description: 너무 많은 요청 (Rate limit 초과)
           content:
             application/json:
               schema:

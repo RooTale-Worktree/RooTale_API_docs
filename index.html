@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LiveTale API - Swagger UI</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui.css" />
+    <title>RooTale API - Swagger UI</title>
+    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui.css" />
     <style>
         html {
             box-sizing: border-box;
@@ -18,34 +18,76 @@
             margin:0;
             background: #fafafa;
         }
+        #error-message {
+            display: none;
+            padding: 20px;
+            margin: 20px;
+            background: #fee;
+            border: 1px solid #fcc;
+            border-radius: 4px;
+            color: #c33;
+        }
     </style>
 </head>
 <body>
+    <div id="error-message"></div>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.9.0/swagger-ui-standalone-preset.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-bundle.js"></script>
+    <script src="https://unpkg.com/swagger-ui-dist@5.17.14/swagger-ui-standalone-preset.js"></script>
     <script>
         window.onload = function() {
-            const ui = SwaggerUIBundle({
-                url: './openapi.yml',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout",
-                validatorUrl: null,
-                tryItOutEnabled: true,
-                supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-                onComplete: function() {
-                    console.log('Swagger UI loaded');
+            try {
+                // Swagger UI 객체가 로드되었는지 확인
+                if (typeof SwaggerUIBundle === 'undefined') {
+                    throw new Error('SwaggerUIBundle이 로드되지 않았습니다. CDN 링크를 확인해주세요.');
                 }
-            });
+                
+                if (typeof SwaggerUIStandalonePreset === 'undefined') {
+                    throw new Error('SwaggerUIStandalonePreset이 로드되지 않았습니다. CDN 링크를 확인해주세요.');
+                }
+
+                const ui = SwaggerUIBundle({
+                    url: './openapi.yml?v=' + Date.now(),
+                    dom_id: '#swagger-ui',
+                    deepLinking: true,
+                    presets: [
+                        SwaggerUIBundle.presets.apis,
+                        SwaggerUIStandalonePreset
+                    ],
+                    plugins: [
+                        SwaggerUIBundle.plugins.DownloadUrl
+                    ],
+                    layout: "StandaloneLayout",
+                    validatorUrl: null,
+                    tryItOutEnabled: true,
+                    supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+                    onComplete: function() {
+                        console.log('Swagger UI loaded successfully');
+                    },
+                    onFailure: function(data) {
+                        console.error('Swagger UI failed to load:', data);
+                        showError('OpenAPI 파일을 로드하는데 실패했습니다: ' + (data.errMsg || data.message || '알 수 없는 오류'));
+                    }
+                });
+            } catch (error) {
+                console.error('Error initializing Swagger UI:', error);
+                showError('Swagger UI 초기화 중 오류가 발생했습니다: ' + error.message);
+            }
         };
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error-message');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        // 전역 에러 핸들러
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e);
+            if (e.message && e.message.includes('swagger')) {
+                showError('Swagger UI 로드 중 오류: ' + e.message);
+            }
+        });
     </script>
 </body>
 </html>
